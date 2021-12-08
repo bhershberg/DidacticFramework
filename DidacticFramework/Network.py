@@ -14,8 +14,8 @@ class Network():
         self.params = dict()
         self.param_init_scale = 0.1
         for layer in range(1,len(self.layer_sizes)):
-            self.params[f'W{layer}'] = self.param_init_scale * np.random.rand(self.layer_sizes[layer-1], self.layer_sizes[layer])
-            self.params[f'b{layer}'] = self.param_init_scale * np.random.rand(1, self.layer_sizes[layer])
+            self.params[f'W{layer}'] = self.param_init_scale * np.random.rand(self.layer_sizes[layer-1], self.layer_sizes[layer]) - self.param_init_scale/2
+            self.params[f'b{layer}'] = self.param_init_scale * np.random.rand(1, self.layer_sizes[layer]) - self.param_init_scale/2
         
         
     def forwardprop(self, input, target):
