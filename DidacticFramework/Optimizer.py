@@ -6,7 +6,7 @@ from tqdm import tqdm               # Progress Bar
 
 class Optimizer():
 
-    def __init__(self, optimizer_method="ADAM", learning_rate=1e-3, beta1=0.9, beta2=0.999, num_epochs=100, batch_size=64):
+    def __init__(self, optimizer_method="ADAM", learning_rate=1e-3, beta1=0.9, beta2=0.999, num_epochs=100, batch_size=64, drop_prob=0, drop_decay_rate=0):
 
         self.optimizer_method = optimizer_method # Supported options are SGD and ADAM
         self.learning_rate = learning_rate
@@ -21,6 +21,10 @@ class Optimizer():
         self.m = dict()
         self.v = dict()
 
+        # Dropout hyperparameters
+        self.drop_prob = drop_prob
+        self.drop_decay_rate = drop_decay_rate
+
         self.loss_history = []
 
     def train_network(self, Network, Loader, grad_checking=False):
@@ -29,16 +33,24 @@ class Optimizer():
         num_iters = int(np.ceil(Loader.x_train.shape[0] / self.batch_size))
         self.Loss = []
         self.t = 0
+        drop_decay = self.drop_decay_rate*self.drop_prob/self.num_epochs
 
         print("Training:")
         for epoch in tqdm(range(self.num_epochs)):
+
+            # setup
             num_grad_checks = 1
+            if self.drop_decay_rate > 0:
+                self.drop_prob = max(self.drop_prob - drop_decay, 0)
+
+            # main training loop
             for _ in range(num_iters):
+                Network.refresh_dropout(drop_prob=self.drop_prob)
                 (x_batch, y_batch) = Loader.get_train_batch(batch_size=self.batch_size)
                 self.Loss, cache = Network.forwardprop(x_batch, y_batch)
                 self.loss_history.append(np.mean(np.array(self.Loss)))
                 grads = Network.backprop(cache)
-                if grad_checking and num_grad_checks > 0:
+                if grad_checking and num_grad_checks > 0: # optional gradient checking
                     num_grad_checks -= 1
                     self.gradient_checking(Network, grads, x_batch, y_batch)
                 self.update_params(Network, grads)
@@ -93,6 +105,8 @@ class Optimizer():
 
 
     def test_network(self, Network, Loader):
+
+        Network.refresh_dropout(drop_prob=0)
         self.predictions = np.array(()).reshape(-1,1)
         (x_test, y_test) = Loader.get_test_batch(batch_size=-1)
         L, cache = Network.forwardprop(x_test, y_test)

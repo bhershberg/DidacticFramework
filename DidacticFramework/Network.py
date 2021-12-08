@@ -39,6 +39,8 @@ class Network():
             elif self.activation_fun == 'relu':
                 a = np.maximum(z,0)
 
+            a *= self.dropout[f'a{layer}'] / (1-self.dropout['drop_prob']) # dropout mask
+
             cache[f"z{layer}"] = z
             cache[f"a{layer}"] = a
 
@@ -71,6 +73,7 @@ class Network():
         # Hidden layer gradients:
         for layer in reversed(range(1,self.num_layers)):
             da = np.dot(dz, self.params[f'W{layer+1}'].T)
+            da *= self.dropout[f'a{layer}']/(1-self.dropout['drop_prob']) # dropout mask
             if self.activation_fun == 'tanh':
                 dz = da * (1 - np.power(np.tanh(cache[f'z{layer}']),2))
             elif self.activation_fun == 'relu':
@@ -79,6 +82,14 @@ class Network():
             grads[f'db{layer}'] = (1/m)*np.sum(dz, axis=0).reshape(1,-1)
 
         return grads
+
+    def refresh_dropout(self, drop_prob=0):
+
+        self.dropout = dict()
+        for layer in range(1,self.num_layers):
+            self.dropout[f'a{layer}'] = (drop_prob < np.random.rand(1, self.layer_sizes[layer]))
+
+        self.dropout['drop_prob'] = drop_prob
 
 
     def visualize_network(self):
