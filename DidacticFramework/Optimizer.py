@@ -95,6 +95,8 @@ class Optimizer():
 
     def gradient_checking(self, Network, grads, inputs, targets):
 
+        # This is a non-exhaustive gradient checker. 
+        # It only checks one gradient per parameter array and assumes that if that's correct, they're all correct.
         for param_name in Network.params:
             epsilon = 1e-8
             i, j = [0, 0]
@@ -117,7 +119,7 @@ class Optimizer():
 
         Network.refresh_dropout(drop_prob=0)
         self.predictions = np.array(()).reshape(-1,1)
-        (x_test, y_test) = Loader.get_test_batch(batch_size=-1)
+        (x_test, y_test) = Loader.get_test_batch(batch_size=-1) # batch_size=-1 grabs the entire test set
         L, cache = Network.forwardprop(x_test, y_test)
         self.predictions = cache['y'].reshape(-1,1)
 
