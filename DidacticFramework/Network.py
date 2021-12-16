@@ -12,10 +12,12 @@ class Network():
 
         # Initalize all weights and biases of the network with small random values:
         self.params = dict()
-        self.param_init_scale = 0.1
+        self.param_init_scale = 1
         for layer in range(1,len(self.layer_sizes)):
-            self.params[f'W{layer}'] = self.param_init_scale * np.random.rand(self.layer_sizes[layer-1], self.layer_sizes[layer]) - self.param_init_scale/2
-            self.params[f'b{layer}'] = self.param_init_scale * np.random.rand(1, self.layer_sizes[layer]) - self.param_init_scale/2
+
+            param_init_scale_norm = self.param_init_scale / np.sqrt(1+self.layer_sizes[layer-1]) # Normalize so that variance of summed weights into neuron stays constant
+            self.params[f'W{layer}'] = param_init_scale_norm * np.random.rand(self.layer_sizes[layer-1], self.layer_sizes[layer]) - param_init_scale_norm/2
+            self.params[f'b{layer}'] = param_init_scale_norm * np.random.rand(1, self.layer_sizes[layer]) - param_init_scale_norm/2
         
         
     def forwardprop(self, input, target):

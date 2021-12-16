@@ -56,31 +56,34 @@ class DataLoader():
         if(batch_size == -1):
             return (self.x_train, self.y_train)
 
-        dataset_length = self.x_train.shape[0]
+        batch_indexes = np.random.choice(len(self.x_train), size=batch_size, replace=False)
+        return (self.x_train[batch_indexes], self.y_train[batch_indexes])
 
-        index_start = self.train_index
-        index_stop = ( self.train_index + batch_size ) % dataset_length
+        # dataset_length = self.x_train.shape[0]
 
-        if index_start < index_stop:
-            # standard case:
-            x = self.x_train[index_start:index_stop]
-            y = self.y_train[index_start:index_stop]
-        else:
-            # special case where we wrap around back to the front again
-            x = np.concatenate((self.x_train[index_start:],self.x_train[:index_stop]))
-            y = np.concatenate((self.y_train[index_start:],self.y_train[:index_stop]))
+        # index_start = self.train_index
+        # index_stop = ( self.train_index + batch_size ) % dataset_length
 
-            # reshuffle / randomize training data for the next epoch:
-            random_order = np.random.permutation(np.arange(self.x_train.size))
-            self.x_train = self.x_train[random_order]
-            self.y_train = self.y_train[random_order]
+        # if index_start < index_stop:
+        #     # standard case:
+        #     x = self.x_train[index_start:index_stop]
+        #     y = self.y_train[index_start:index_stop]
+        # else:
+        #     # special case where we wrap around back to the front again
+        #     x = np.concatenate((self.x_train[index_start:],self.x_train[:index_stop]))
+        #     y = np.concatenate((self.y_train[index_start:],self.y_train[:index_stop]))
 
-        self.train_index = index_stop
+        #     # reshuffle / randomize training data for the next epoch:
+        #     random_order = np.random.permutation(np.arange(self.x_train.size))
+        #     self.x_train = self.x_train[random_order]
+        #     self.y_train = self.y_train[random_order]
 
-        assert x.shape[0] == batch_size, f"x shape={x.shape[0]}, batch_size={batch_size}"
-        assert y.shape[0] == batch_size, f"y shape={y.shape[0]}, batch_size={batch_size}"
+        # self.train_index = index_stop
 
-        return (x, y)
+        # assert x.shape[0] == batch_size, f"x shape={x.shape[0]}, batch_size={batch_size}"
+        # assert y.shape[0] == batch_size, f"y shape={y.shape[0]}, batch_size={batch_size}"
+
+        # return (x, y)
 
     def get_test_batch(self, batch_size=64):
 

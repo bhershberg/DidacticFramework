@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt     # Plotting
 import numpy as np
 from numpy.lib.function_base import kaiser                  # Matrix Math
 from tqdm import tqdm               # Progress Bar
+from IPython import display
 
 class Optimizer():
 
@@ -17,7 +18,6 @@ class Optimizer():
 
         # Adam hyperparameters
         self.epsilon = 1e-8
-        self.t = 0
         self.m = dict()
         self.v = dict()
 
@@ -27,16 +27,19 @@ class Optimizer():
 
         self.loss_history = []
 
-    def train_network(self, Network, Loader, grad_checking=False):
+    def train_network(self, Network, Loader, grad_checking=False, visualize=True):
     # Main loop(s) used for training the network over all epochs and samples
 
         num_iters = int(np.ceil(Loader.x_train.shape[0] / self.batch_size))
-        self.Loss = []
-        self.t = 0
+        self.Loss = 0
         drop_decay = self.drop_decay_rate*self.drop_prob/self.num_epochs
+        self.beta1pow = self.beta1
+        self.beta2pow = self.beta2
 
         print("Training:")
-        for epoch in tqdm(range(self.num_epochs)):
+
+        t = tqdm(range(self.num_epochs))
+        for epoch in t:
 
             # setup
             num_grad_checks = 1
@@ -55,6 +58,8 @@ class Optimizer():
                     self.gradient_checking(Network, grads, x_batch, y_batch)
                 self.update_params(Network, grads)
 
+            t.set_description(f"Loss={np.mean(np.array(self.loss_history[-num_iters:]))}")
+
         return Network.params, self.Loss
 
     def update_params(self, Network, grads):
@@ -67,7 +72,6 @@ class Optimizer():
 
         elif self.optimizer_method.upper() == 'ADAM':
 
-            self.t += 1
             for param_name in Network.params:
 
                 if param_name not in self.m: # If not yet initialized, do so
@@ -77,10 +81,15 @@ class Optimizer():
                 self.m[param_name] = self.beta1 * self.m[param_name] + (1-self.beta1) * grads[f"d{param_name}"]
                 self.v[param_name] = self.beta2 * self.v[param_name] + (1-self.beta2) * np.square(grads[f"d{param_name}"])
                 self.m_hat = self.m[param_name] / (1-self.beta1)
-                # Network.params[param_name] -= self.learning_rate * self.m[param_name] / (np.sqrt(self.v[param_name]) + self.epsilon)
-                m_hat = self.m[param_name] / (1-np.power(self.beta1,self.t))
-                v_hat = self.v[param_name] / (1-np.power(self.beta2,self.t))
-                Network.params[param_name] -= self.learning_rate * m_hat / (np.sqrt(v_hat) + self.epsilon)
+                Network.params[param_name] -= self.learning_rate * self.m[param_name] / (np.sqrt(self.v[param_name]) + self.epsilon)
+
+            #     # The full Adam algorithm that adjusts the initial exponential moving average 
+            #     # doesn't make too much difference in training outcome, but slows it down...
+            #     m_hat = self.m[param_name] / (1-self.beta1pow)
+            #     v_hat = self.v[param_name] / (1-self.beta2pow)
+            #     Network.params[param_name] -= self.learning_rate * m_hat / (np.sqrt(v_hat) + self.epsilon)
+            # self.beta1pow *= self.beta1pow
+            # self.beta2pow *= self.beta2pow
         
         return Network.params
 
@@ -125,6 +134,7 @@ class Optimizer():
         plt.xlabel("Mini Batch #")
         plt.ylabel("Loss")
         plt.title("Training Set Loss")
+
         plt.show()
 
         print(f"Test Set Loss: {np.mean(L)}")
